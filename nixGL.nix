@@ -35,7 +35,7 @@ let
         preferLocalBuild = true;
         allowSubstitutes = false;
       }
-      "cp /proc/driver/nvidia/version $out || touch $out";
+      "cp /proc/driver/nvidia/version $out || echo unknown > $out";
 
   # The nvidia version. Either fixed by the `nvidiaVersion` argument, or
   # auto-detected. Auto-detection is impure.
@@ -51,10 +51,12 @@ let
       if versionMatch != null then
         builtins.head versionMatch
       else
-        null;
+        "unknown";
 
   addNvidiaVersion = drv: drv.overrideAttrs(oldAttrs: {
-    name = oldAttrs.name + "-${_nvidiaVersion}";
+    # Auto detected nvidiaVersion (using _nvidiaVersion) causes IFD which breaks nix-env
+    # See #72
+    name = oldAttrs.name + "-${if nvidiaVersion != null then nvidiaVersion else "unknown"}";
   });
 
   writeExecutable = { name, text } : writeTextFile {
@@ -78,7 +80,7 @@ in
   rec {
     nvidia = (linuxPackages.nvidia_x11.override {
     }).overrideAttrs(oldAttrs: rec {
-      name = "nvidia-${_nvidiaVersion}";
+      name = "nvidia";
       src = let url = "https://download.nvidia.com/XFree86/Linux-x86_64/${_nvidiaVersion}/NVIDIA-Linux-x86_64-${_nvidiaVersion}.run";
       in if nvidiaHash != null
       then fetchurl {
@@ -184,18 +186,19 @@ in
     '';
   };
 
-  nixGLCommon = nixGL: runCommand "nixGLCommon" {} ''
-    mkdir -p "$out/bin"
-    # star because nixGLNvidia... have version prefixed name
-    cp ${nixGL}/bin/* "$out/bin/nixGL";
-  '';
-
   # The output derivation contains nixGL which point either to
   # nixGLNvidia or nixGLIntel using an heuristic.
-  nixGLDefault =
-    if _nvidiaVersion != null then
-      nixGLCommon nixGLNvidia
+  nixGLDefault = nixGL: runCommand "nixGLCommon" {} ''
+    mkdir -p "$out/bin"
+    # The detection of the version is done here instead of outside in nix
+    # because this way it is lazy and the weird evaluation of '/proc/...' does
+    # not break nix evaluation. See #72.
+    if [ "${nvidiaVersion}" == "unknown" ]
+    then
+      cp ${nixGLIntel}/bin/* "$out/bin/nixGL";
     else
-      nixGLCommon nixGLIntel
-    ;
+      # star because nixGLNvidia... have version prefixed name
+      cp ${nixGLNvidia}/bin/* "$out/bin/nixGL";
+    fi
+  '';
 }
