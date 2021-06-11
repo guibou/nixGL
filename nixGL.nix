@@ -110,7 +110,7 @@ in
       #!${runtimeShell}
       ${lib.optionalString (api == "Vulkan") ''export VK_LAYER_PATH=${vulkan-validation-layers}/share/vulkan/explicit_layer.d''}
 
-        ${lib.optionalString (api == "Vulkan") ''export VK_ICD_FILENAMES=${nvidiaLibsOnly}/share/vulkan/icd.d/nvidia.json${lib.optionalString enable32bits ":${nvidiaLibsOnly.lib32}/share/vulkan/icd.d/nvidia.json"}:$VK_ICD_FILENAMES''}
+        ${lib.optionalString (api == "Vulkan") ''export VK_ICD_FILENAMES=${nvidiaLibsOnly}/share/vulkan/icd.d/nvidia_icd.json${lib.optionalString enable32bits ":${nvidiaLibsOnly.lib32}/share/vulkan/icd.d/nvidia_icd.json"}:$VK_ICD_FILENAMES''}
         export LD_LIBRARY_PATH=${lib.makeLibraryPath ([
           libglvnd
           nvidiaLibsOnly
