@@ -1,13 +1,19 @@
-name: 'Test'
+name: Test
 
 on: [ push, pull_request ]
 
 jobs:
   test:
     name: 'Test'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
+
     steps:
     - uses: actions/checkout@v2
-    - uses: cachix/install-nix-action@v8
-    - run: nix-build all.nix
+    - uses: cachix/install-nix-action@v12
+    - uses: cachix/cachix-action@v8
+      with:
+        name: guibou
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+    - name: Build all
+      run: nix-build all.nix
 
