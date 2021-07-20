@@ -1,5 +1,5 @@
 let
-  pkgs = import <nixpkgs> { config = { allowUnfree = true; }; };
+  pkgs = import ./nixpkgs.nix { config = { allowUnfree = true; }; };
 in
 {
   pure = pkgs.recurseIntoAttrs (pkgs.callPackage ./nixGL.nix {
